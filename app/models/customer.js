@@ -1,4 +1,4 @@
-const Customer = require('./users');
+const User = require('./users');
 const Schema = require('mongoose').Schema;
 
 const Customer = User.discriminator("customer", new Schema({

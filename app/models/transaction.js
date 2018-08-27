@@ -39,17 +39,21 @@ var transactionSchema = new Schema({
         enum: ['RESOLVED', 'UNRESOLVED'],
         default: 'UNRESOLVED'
     },
+
     arrivalStatus: {
         type: String,
         enum: ['NOT ARRIVED', 'ARRIVED', 'LEFT'],
         default: 'NOT ARRIVED'
     },
+
     fee: {
         type: Number
     },
+
     arrivedAt: {
         type: Date
     },
+
     leftAt: {
         type: Date
     }
@@ -89,3 +93,7 @@ transactionSchema.post('update', errorHandler.handler);
 var Transaction = mongoose.model("transaction", transactionSchema);
 
 module.exports = Transaction;
+
+
+
+//TODO: late
