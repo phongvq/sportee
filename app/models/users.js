@@ -1,25 +1,25 @@
 const mongoose = require('mongoose');
 const Schema = mongoose.Schema;
 
+const errorHandler = require("../helpers/mongoErrorHandler");
+
 const bcrypt = require('bcrypt-nodejs');
 
 const userSchema = new Schema({
     email: {
         type: String,
-        required: true
+        required: true,
+        unique: true
     },
     password: {
         type: String,
         select: true,
         required: true
     },
-    phoneNumber: {
-        type: String,
-        required: true
-    },
     active: {
         type: Boolean,
-        required: true
+        required: true,
+        default: false
     }
 }, {discriminatorKey: "usertype"});
 
@@ -34,6 +34,12 @@ userSchema.methods.comparePassword = function (password) {
     return bcrypt.compareSync(password, this.password);
 }
 
+userSchema.post('save', errorHandler.handler);
+userSchema.post('update', errorHandler.handler);
+
 const User = mongoose.model('users', userSchema);
 
 module.exports = User;
+
+
+//TODO: email, phone validation

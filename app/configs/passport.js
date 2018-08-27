@@ -7,6 +7,7 @@ const jwt = require('jsonwebtoken');
 const configAuth = require("./auth");
 const User = require('../models/users');
 module.exports = function (passport) {
+
     passport.serializeUser(function (user, done) {
         done(null, user);
     });
@@ -53,25 +54,24 @@ module.exports = function (passport) {
         })
     }))
     passport.use('jwt', new JwtStrategy({
-            jwtFromRequest: ExtractJwt.fromHeader('authorization'),
-            secretOrKey: configAuth.jwt.secret
-        }, function (jwt_payload, done) {
-            User.findOne({
-                _id: jwt_payload._id
-            }, function (err, user) {
-                var error = {};
-                error.statusCode = 500;
+        jwtFromRequest: ExtractJwt.fromHeader('authorization'),
+        secretOrKey: configAuth.jwt.secret
+    }, function (jwt_payload, done) {
+        User.findOne({
+            _id: jwt_payload._id
+        }, function (err, user) {
+            var error = {};
+            error.statusCode = 500;
 
-                if (err) {
-                    error.detail = err;
-                    return done(error);
-                }
+            if (err) {
+                error.detail = err;
+                return done(error);
+            }
 
-                if (!user)
-                    return done(null, false);
+            if (!user)
+                return done(null, false);
 
-                return done(null, user);
-            });
-        })
-    );
+            return done(null, user);
+        });
+    }));
 }
