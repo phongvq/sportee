@@ -18,8 +18,6 @@ module.exports = function (passport) {
             done(err, user);
         });
     });
-
-
     passport.use("local-login", new LocalStrategy({
         usernameField: "email",
         passwordField: "password",

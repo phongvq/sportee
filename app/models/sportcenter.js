@@ -21,6 +21,10 @@ var SportCenterSchema = new Schema({
 		},
 		endAt : {
 			type : Date
+		},
+		transaction : {
+			type :Schema.Types.ObjectId,
+			ref : 'transaction'
 		}
 	}],
 	literalAddress : {
@@ -40,7 +44,7 @@ var SportCenterSchema = new Schema({
 	status : {
 		type : String,
 		enum : ['AVAILABLE', 'CLOSED'],
-		default : ['AVAILABLE']
+		default : 'AVAILABLE'
 	},
 	feePerHour : { 
 		type : Number,

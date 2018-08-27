@@ -1,7 +1,8 @@
 var mongoose = require('mongoose');
 var Schema = mongoose.Schema
-var baseUrl = require('../../config/auth').baseUrl
 
+var baseUrl = require('../configs/auth').baseUrl
+var qrEncoder = require('qrcode')
 const errorHandler = require("../helpers/mongoErrorHandler");
 
 var transactionSchema = new Schema({
@@ -12,7 +13,7 @@ var transactionSchema = new Schema({
     },
     center: {
         type: Schema.Types.ObjectId,
-        ref: 'SportCenter',
+        ref: 'sportcenter',
         required: true
     },
     customer: {
@@ -20,8 +21,7 @@ var transactionSchema = new Schema({
         ref: 'customer',
         required: true
     },
-
-    payingMethod: {
+    paymentMethod: {
         type: String,
         enum: ['PAY ONLINE', 'PAY DIRECTLY'],
         required: true
@@ -49,13 +49,23 @@ var transactionSchema = new Schema({
     fee: {
         type: Number
     },
-
+    start: {
+        type : Date 
+    },
+    end : {
+        type : Date
+    },
     arrivedAt: {
         type: Date
     },
-
     leftAt: {
         type: Date
+    },
+    checkinQRUrl : {
+        type : String
+    },
+    checkoutQRUrl : {
+        type : String 
     }
 }, {
     timestamps: true,
@@ -66,26 +76,41 @@ transactionSchema.virtual('self_url').get(function () {
     return baseUrl + 'transaction/' + this._id
 })
 
-
-
-//TODO: select -id,_v
-
-
-
-transactionSchema.methods.generateCheckInCode = function () {
-    this.checkinCode = this.self_url + '/' + this.createdAt
+transactionSchema.methods.generateCheckInCode = function (callback) {
+    this.save((err)=>{
+        if (err)
+            return next(err)
+        this.checkinCode = this.self_url + '/' + this.createdAt
+        qrEncoder.toDataURL(this.checkinCode, (err, url)=>{
+            if (err)
+                return next(err)
+            this.checkinQRUrl = url
+            this.save(callback)
+        })
+    })
+    
 }
-transactionSchema.methods.checkInAndGenerateCheckoutCode = function () {
+
+transactionSchema.methods.checkInAndGenerateCheckoutCode = function (callback) {
     this.arrivedAt = Date.now()
     this.arrivalStatus = 'ARRIVED'
     this.checkoutCode = this.self_url + '/' + this.arrivedAt
-
+    qrEncoder.toDataURL(this.checkoutCode, (err, url)=>{
+        
+        this.checkinCode = null 
+        this.checkinQRUrl = null
+        this.checkoutQRUrl = url
+        this.save(callback)
+    })
 }
 
-transactionSchema.methods.checkOut = function () {
+transactionSchema.methods.checkOut = function (callback) {
     this.leftAt = Date.now()
     this.arrivalStatus = 'LEFT'
     this.status = 'RESOLVED'
+    this.checkoutCode = null
+    this.checkoutQRUrl = null
+    this.save(callback)
 };
 
 transactionSchema.post('save', errorHandler.handler);
