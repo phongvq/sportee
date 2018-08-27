@@ -1,6 +1,8 @@
 exports.handler = function (err, doc, next) {
     // console.log(err.message);
-    if (err.name === "MongoError") {
+    console.log(err.message);
+
+    if (err.code) {
         switch (err.code) {
             case 11000:
                 var duplicateField = err.message.split(".$")[1]
@@ -14,6 +16,14 @@ exports.handler = function (err, doc, next) {
                 break;
         }
     } else {
-        return next(err);
+        return;
+
+
+
+
+
+
+
+        next(err);
     }
 }

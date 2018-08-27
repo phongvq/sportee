@@ -106,53 +106,91 @@ exports.signup = function (req, res, next) {
 
 };
 
+exports.activateAccount = function (req, res, next) {
+    var userId = req.params.id;
+    // console.log(user);
+
+    User.findById(userId, (err, user) => {
+        if (err) {
+            return next(err);
+        }
+
+        if (!user) return res.formatter.forbidden("You need an account to perform this action");
+        else if (user.active === true) {
+            return res.formatter.forbidden("This account has already activated");
+
+        } else {
+            otpService.getValidOtp(userId, (err, otpValue) => {
+                if (err) return next(err);
+                else {
+                    mailService.sendOtp(user.email, otpValue, (err) => {
+                        // console.log("callback");
+                        console.log("Otp sent: " + otpValue);
+                        if (err) return next(err);
+                        else {
+                            res.formatter.ok("Otp has been sent to your email");
+                            return next();
+                        }
+                    });
+                }
+            });
+        }
+    })
+};
+
 
 exports.submitActivation = function (req, res, next) {
-	var submitOtp = req.body.otp;
-	var user = req.user;
-	if (user.active === true) {
-		res.formatter.forbidden("This account has already activated");
-		return next();
-	}
+    const submitOtp = req.body.otp;
+    const userId = req.params.id;
 
-	if (!submitOtp) {
-		res.formatter.badRequest("Otp required");
-		return next();
-	}
 
-	Otp.findOne({
-			userId: user._id
-		},
-		(err, otp) => {
-			if (err) return next(err);
-			if (otp.compareOtp(submitOtp) && !otp.expiredOtp()) {
-				User.update({
-						_id: user._id
-					}, {
-						$set: {
-							active: true
-						}
-					},
-					(err, raw) => {
-						if (err) return next(err);
-						else {
-							res.formatter.ok("Account activated");
-							return next();
-						}
-						// else
-						// 	console.log(raw);
-					}
-				);
-			} else {
-				if (otp.expiredOtp()) {
-					res.formatter.ok("OTP expired");
-					return next();
-				}
-				if (!otp.compareOtp()) {
-					res.formatter.ok("OTP does not match");
-					return next();
-				}
-			}
-		}
-	);
+    if (!submitOtp) {
+        return res.formatter.badRequest("Otp required");
+    }
+
+    User.findById(userId, (err, user) => {
+        if (err) return next(err);
+        if (!user) return res.formatter.forbidden("");
+
+        else if (user.active === true) {
+            return res.formatter.forbidden("This account has already activated");
+
+        } else {
+            Otp.findOne({
+                    userId: user._id
+                },
+                (err, otp) => {
+                    if (err) return next(err);
+                    if (otp.compareOtp(submitOtp) && !otp.expiredOtp()) {
+                        User.update({
+                                _id: user._id
+                            }, {
+                                $set: {
+                                    active: true
+                                }
+                            },
+                            (err, raw) => {
+                                if (err) return next(err);
+                                else {
+                                    res.formatter.ok("Account activated");
+                                    return next();
+                                }
+                            }
+                        );
+                    } else {
+                        if (otp.expiredOtp()) {
+                            res.formatter.ok("OTP expired");
+                            return next();
+                        }
+                        if (!otp.compareOtp()) {
+                            res.formatter.ok("OTP does not match");
+                            return next();
+                        }
+                    }
+                }
+            );
+        }
+    })
+
+
 };

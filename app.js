@@ -6,6 +6,7 @@ var responseFormatter = require('express-response-formatter')
 
 const bodyparser = require('body-parser');
 
+const mongoose = require('mongoose');
 const passport = require("passport");
 
 var app = express();
@@ -31,6 +32,17 @@ require("./app/routes/sportcenter")(app)
 
 //============================error handler=======================
 app.use(function (err, req, res, next) {
+    console.log(err.message.indexOf("Cast to ObjectId failed"));
+    
+    if (err.message.indexOf("Cast to ObjectId failed") !== -1) {
+        err = {
+            statusCode: 500,
+            detail: "Resource not exist."
+        };
+    }
+
+
+
     console.log('next');
     console.log(err);
     var statusCode = err.statusCode || 500;
