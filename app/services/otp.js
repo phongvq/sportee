@@ -1,9 +1,8 @@
 const randomstring = require('randomstring');
 const moment = require('moment');
 
-const otpConfig = require('../../config/otp');
+const otpConfig = require('../configs/otp');
 const Otp = require("../models/otp");
-const moment = require("moment");
 
 
 function genOtp() {

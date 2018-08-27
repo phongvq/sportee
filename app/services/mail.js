@@ -1,4 +1,4 @@
-var mailConfig = require('../../config/mailgun');
+var mailConfig = require("../configs/mailgun");
 var mailgun = require('mailgun-js')({
     apiKey: mailConfig.api_key,
     domain: mailConfig.domain

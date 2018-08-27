@@ -5,7 +5,7 @@ const Host = require("../models/host");
 
 
 var Otp = require("../models/otp");
-var otpConfig = require("../../config/otp");
+var otpConfig = require("../configs/otp");
 
 var otpService = require("../services/otp")
 var mailService = require("../services/mail");

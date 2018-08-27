@@ -6,14 +6,14 @@ exports.handler = function (err, doc, next) {
                 var duplicateField = err.message.split(".$")[1]
                     .split(" dup key")[0];
                 duplicateField = duplicateField.substring(0, duplicateField.lastIndexOf("_"));
-                next(new Error(duplicateField + " duplicated"));
+                return next(new Error(duplicateField + " duplicated"));
                 break;
 
             default:
-                next(err);
+                return next(err);
                 break;
         }
     } else {
-        next(err);
+        return next(err);
     }
 }
