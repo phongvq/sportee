@@ -15,20 +15,22 @@ var pusher = new Pusher({
     encrypted: true
 })
 
+const notifService = require("../services/notif");
 
 // For both customer, host, admin
 exports.getAllTransactions = (req, res, next) => {
+    console.log(req.user.usertype)
     const usertype = req.user.usertype;
+
     const query = usertype ? {
         usertype: req.user._id
     } : {};
-
     Transaction.find(query).populate({
             path: 'center',
             select: 'name literalLocation'
         })
         .populate({
-            path: 'customer',
+            path: "customer",
             select: 'fullName phoneNumber'
         })
         .exec((err, transactions) => {
@@ -108,38 +110,39 @@ exports.createTransaction = (req, res, next) => {
                 return;
             }
             var transaction = new Transaction()
-            transaction.center = req.body.center 
+            transaction.center = req.body.center
             transaction.paymentMethod = req.body.paymentMethod
-            transaction.fee = center.feePerHour 
+            transaction.fee = center.feePerHour
             transaction.host = center.host
             transaction.customer = req.user._id
-            transaction.start = moment(req.body.start,'YYYY-MM-DDhh:mm:ss').toDate()
-            transaction.end = moment(req.body.start,'YYYY-MM-DDhh:mm:ss').add(parseInt(req.body.time),'h').toDate()
-            
-            transaction.generateCheckInCode((err, updatedTransaction)=>{
+            transaction.start = moment(req.body.start, 'YYYY-MM-DDhh:mm:ss').toDate()
+            transaction.end = moment(req.body.start, 'YYYY-MM-DDhh:mm:ss').add(parseInt(req.body.time), 'h').toDate()
+
+
+            transaction.generateCheckInCode((err, updatedTransaction) => {
                 center.reservations.push({
-                    startAt : updatedTransaction.start,
-                    endAt : updatedTransaction.end, 
-                    transaction : updatedTransaction
+                    startAt: updatedTransaction.start,
+                    endAt: updatedTransaction.end,
+                    transaction: updatedTransaction
                 })
-                center.save((err)=>{
-                    if (err) 
+                center.save((err) => {
+                    if (err)
                         return next()
                     res.formatter.created({
-                        transaction : updatedTransaction,
-                        sportcenter : {
-                            name : center.name,
-                            literalAddress : center.literalAddress
+                        transaction: updatedTransaction,
+                        sportcenter: {
+                            name: center.name,
+                            literalAddress: center.literalAddress
                         }
                     })
                     var channelName = pusherConfig.channelPrefix + updatedTransaction.host.toString()
                     pusher.trigger(channelName, "slot-request-event", {
-                        customer : req.user,
-                        transaction : updatedTransaction
+                        customer: req.user,
+                        transaction: updatedTransaction
                     })
                 })
             })
-            
+
         })
     }
 }
@@ -163,17 +166,21 @@ exports.validCheckIn = (req, res, next) => {
                     message: message
                 })
             } else {
-                transaction.checkInAndGenerateCheckoutCode((err,updatedTransaction)=>{
+                transaction.checkInAndGenerateCheckoutCode((err, updatedTransaction) => {
                     if (err)
                         return next(err)
-                    var channelName = pusherConfig.channelPrefix + updatedTransaction.customer.toString()
+                    const channelName = pusherConfig.channelPrefix + updatedTransaction.customer.toString();
+
+                    notifService.scheduleTimeExceedWarning(updatedTransaction.customer.toString(), updatedTransaction.customer.end);
+
+
                     pusher.trigger(channelName, "checkin-successfully", {
-                        message : "You have successfully checked in!",
-                       transaction : updatedTransaction,
+                        message: "You have successfully checked in!",
+                        transaction: updatedTransaction,
                     })
                     res.formatter.ok(updatedTransaction)
                 })
-            }  
+            }
         } else {
             res.formatter.noContent()
         }
@@ -185,12 +192,12 @@ exports.validCheckIn = (req, res, next) => {
 // If valid, the customer may now leave the park
 exports.validCheckOut = (req, res, next) => {
     Transaction.findOne({
-            checkoutCode: req.body.decoded,
-            status: "UNRESOLVED",
-            arrivalStatus: "ARRIVED"
+        checkoutCode: req.body.decoded,
+        status: "UNRESOLVED",
+        arrivalStatus: "ARRIVED"
     }).populate({
-            path: 'center',
-            select: 'name literalLocation reservations'
+        path: 'center',
+        select: 'name literalLocation reservations'
     }).exec((err, transaction) => {
         if (err)
             return next(err)
@@ -201,22 +208,28 @@ exports.validCheckOut = (req, res, next) => {
                     message: message
                 })
             } else {
-                transaction.checkOut((err, updatedTransaction)=>{
+                transaction.checkOut((err, updatedTransaction) => {
                     if (err)
                         return next(err)
                     var index = null
                     var reservations = updatedTransaction.center.reservations
-                    for (var i = 0;i<reservations.length;i++)
-                        if (reservations[i].transaction.equals(updatedTransaction._id)){
-                            index = i;
-                            break
-                        }
+                    console.log(reservations)
+                    for (var i = 0; i < reservations.length; i++)
+                        if (reservations[i].transaction != undefined)
+                            if (reservations[i].transaction.equals(updatedTransaction._id)) {
+                                index = i;
+                                break
+                            }
                     if (index != null)
-                        updatedTransaction.center.reservatios.splice(index,1)
-                    updatedTransaction.center.reservations.save((err) => {
+                        updatedTransaction.center.reservations.splice(index, 1)
+                    updatedTransaction.center.save((err) => {
                         if (err)
                             return next(err)
-                        var channelName = pusherConfig.channelPrefix + updatedTransaction.customer.toString()
+                        const channelName = pusherConfig.channelPrefix + updatedTransaction.customer.toString();
+
+
+                        //start 'cron' timeout warning
+                        notifService.stopTimeExceedWarning(updatedTransaction.customer.toString());
                         pusher.trigger(channelName, "checkout-successfully", {
                             message: "You have successfully checked out"
                         })
