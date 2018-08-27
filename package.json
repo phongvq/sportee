@@ -6,12 +6,19 @@
     "start": "node ./bin/www"
   },
   "dependencies": {
+    "bcrypt-nodejs": "0.0.3",
+    "body-parser": "^1.18.3",
     "cookie-parser": "~1.4.3",
     "debug": "~2.6.9",
     "express": "~4.16.0",
+
     "express-response-formatter": "^1.0.0",
     "moment": "^2.22.2",
-    "mongoose": "^5.2.9",
-    "morgan": "~1.9.0"
+
+    "mongoose": "^5.2.8",
+    "morgan": "~1.9.0",
+    "passport": "^0.4.0",
+    "passport-jwt": "^4.0.0",
+    "passport-local": "^1.0.0"
   }
 }
