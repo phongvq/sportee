@@ -1,12 +1,12 @@
 const mongoose = require("mongoose")
 const Schema = mongoose.Schema
-const PlayField = require("./playfield")
 
 var SportCenterSchema = new Schema({
 	host : {
 		type : Schema.Types.ObjectId,
 		required : true,
 		ref : 'Host'
+	},
 	name : {
 		type : String,
 		required : true

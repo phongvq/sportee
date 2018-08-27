@@ -10,7 +10,6 @@ const passport = require("passport");
 
 var app = express();
 
-
 const port = process.env.port || 8042;
 
 app.use(responseFormatter())
@@ -19,14 +18,15 @@ app.use(bodyparser.json());
 app.use(bodyparser.urlencoded({
     extended: true
 }));
-
-//======================== configs =================
 require("./app/configs/passport")(passport);
+app.use(passport.initialize())
+//======================== configs =================
+
 require("./app/configs/database")();
 
 //======================== routes ==================
 require("./app/routes/users")(app);
-
+require("./app/routes/sportcenter")(app)
 app.listen(port);
 console.log("app listen on port " + port);
 

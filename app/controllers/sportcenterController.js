@@ -1,5 +1,4 @@
 var SportCenter = require('../models/sportcenter')
-var PlayField = require('../models/playfield')
 var moment = require('moment')
 exports.getAllSportCenters = (req,res,next)=>{
 	SportCenter.find({
@@ -30,7 +29,7 @@ exports.getSportCentersValidedUserRequest = (req,res,next)=>{
 	})
 }
 exports.getSportCenterDetail = (req,res,next)=>{
-	SportCenter.find({
+	SportCenter.findOne({
 		status : 'AVAILABLE',
 		_id : req.params.centerId
 	}, (err, sportcenter)=>{
@@ -62,6 +61,28 @@ exports.createSportCenter = (req,res,next)=>{
         err = "You dont have permission";
         res.formatter.forbidden(err);
     }
+}
+
+exports.addReservation = (req,res,next)=>{
+	SportCenter.findOne({
+		_id : req.params.centerId
+	}, (err, sportcenter)=>{
+		if (err)
+			return next(err)
+		if (sportcenter){
+			var jsDateStartTime = moment(req.body.start)
+			var jsDateEndTime = moment(req.body.start).add(parseInt(requestedTime),'h').toDate()
+			sportcenter.reservations.push({
+				startAt : jsDateStartTime,
+				endAt : jsDateEndTime
+			})
+			sportcenter.save((err, updatedSportCenter)=>{
+				if (err)
+					return next(err)
+				res.formatter.ok(updatedSportCenter)
+			})
+		}
+	})
 }
 
 function getAvailableSportCenters(sportCenters, requestedStart, requestedTime){

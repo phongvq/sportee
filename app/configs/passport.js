@@ -40,12 +40,9 @@ module.exports = function (passport) {
             user['password'] = undefined;
             //TODO: token
             return done(null, user, token);
-
-        });
-
-        // done(null)
-
-        passport.use('jwt', new JwtStrategy({
+        })
+    }))
+    passport.use('jwt', new JwtStrategy({
             jwtFromRequest: ExtractJwt.fromHeader('authorization'),
             secretOrKey: configAuth.jwt.secret
         }, function (jwt_payload, done) {
@@ -63,14 +60,8 @@ module.exports = function (passport) {
                 if (!user)
                     return done(null, false);
 
-                // if (!user.active) {
-                //     error.statusCode = 403;
-                //     error.detail = "Account not activated";
-                //     return done(error, false);
-                // }
                 return done(null, user);
             });
-        }));
-
-    }))
+        })
+    );
 }

@@ -30,6 +30,10 @@ var transactionSchema = new Schema({
         type: String,
         default: null
     },
+    checkoutCode: {
+        type: String,
+        default: null
+    },
     status: {
         type: String,
         enum: ['RESOLVED', 'UNRESOLVED'],
@@ -82,8 +86,6 @@ transactionSchema.methods.checkOut = function () {
 
 transactionSchema.post('save', errorHandler.handler);
 transactionSchema.post('update', errorHandler.handler);
-
-
 var Transaction = mongoose.model("transaction", transactionSchema);
 
 module.exports = Transaction;
