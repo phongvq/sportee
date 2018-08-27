@@ -7,6 +7,16 @@ const jwt = require('jsonwebtoken');
 const configAuth = require("./auth");
 const User = require('../models/users');
 module.exports = function (passport) {
+    passport.serializeUser(function (user, done) {
+        done(null, user);
+    });
+
+    // used to deserialize the user
+    passport.deserializeUser(function (id, done) {
+        User.findById(id, function (err, user) {
+            done(err, user);
+        });
+    });
     passport.use("local-login", new LocalStrategy({
         usernameField: "email",
         passwordField: "password",

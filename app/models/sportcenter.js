@@ -40,7 +40,7 @@ var SportCenterSchema = new Schema({
 	status : {
 		type : String,
 		enum : ['AVAILABLE', 'CLOSED'],
-		default : ['AVAILABLE']
+		default : 'AVAILABLE'
 	},
 	feePerHour : { 
 		type : Number,

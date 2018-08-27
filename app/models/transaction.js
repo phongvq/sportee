@@ -1,7 +1,7 @@
 var mongoose = require('mongoose');
 var Schema = mongoose.Schema
 var baseUrl = require('../../config/auth').baseUrl
-
+var qrEncoder = require('qrcode')
 const errorHandler = require("../helpers/mongoErrorHandler");
 
 var transactionSchema = new Schema({
@@ -20,8 +20,7 @@ var transactionSchema = new Schema({
         ref: 'customer',
         required: true
     },
-
-    payingMethod: {
+    paymentMethod: {
         type: String,
         enum: ['PAY ONLINE', 'PAY DIRECTLY'],
         required: true
@@ -53,6 +52,12 @@ var transactionSchema = new Schema({
     leftAt: {
         type: Date
     }
+    checkinQRUrl : {
+        type : String
+    },
+    checkoutQRUrl : {
+        type : String 
+    }
 }, {
     timestamps: true,
     versionKey: false
@@ -62,26 +67,37 @@ transactionSchema.virtual('self_url').get(function () {
     return baseUrl + 'transaction/' + this._id
 })
 
-
-
-//TODO: select -id,_v
-
-
-
-transactionSchema.methods.generateCheckInCode = function () {
+transactionSchema.methods.generateCheckInCode = function (callback) {
     this.checkinCode = this.self_url + '/' + this.createdAt
+    qrEncoder.toDataURL(this.checkinCode, (err, url)=>{
+        if (err)
+            return next(err)
+        this.checkinQRUrl = url
+        this.save(callback)
+    })
 }
-transactionSchema.methods.checkInAndGenerateCheckoutCode = function () {
+
+transactionSchema.methods.checkInAndGenerateCheckoutCode = function (callback) {
     this.arrivedAt = Date.now()
     this.arrivalStatus = 'ARRIVED'
     this.checkoutCode = this.self_url + '/' + this.arrivedAt
-
+    qrEncoder.toDataURL(this.checkoutCode, (err, url)=>{
+        if (err)
+            return next(err)
+        this.checkinCode = null 
+        this.checkinQRUrl = null
+        this.checkoutQRUrl = url
+        this.save(callback)
+    })
 }
 
-transactionSchema.methods.checkOut = function () {
+transactionSchema.methods.checkOut = function (callback) {
     this.leftAt = Date.now()
     this.arrivalStatus = 'LEFT'
     this.status = 'RESOLVED'
+    this.checkoutCode = null
+    this.checkoutQRUrl = null
+    this.save(callback)
 };
 
 transactionSchema.post('save', errorHandler.handler);
