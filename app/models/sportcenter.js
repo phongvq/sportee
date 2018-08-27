@@ -21,6 +21,10 @@ var SportCenterSchema = new Schema({
 		},
 		endAt : {
 			type : Date
+		},
+		transaction : {
+			type :Schema.Types.ObjectId,
+			ref : 'transaction'
 		}
 	}],
 	literalAddress : {

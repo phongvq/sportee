@@ -28,7 +28,19 @@ require("./app/configs/database")();
 //======================== routes ==================
 require("./app/routes/users")(app);
 require("./app/routes/sportcenter")(app)
+require("./app/routes/transaction")(app)
 
+var pusherConfig = require('./app/configs/pusher')
+app.get("/pusher/auth", (req, res)=>{
+    var socketId = req.body.socket_id;
+    var channel = req.body.channel_name;
+    if (channel.split(pusherConfig.channelPrefix)[1] === req.user._id.toString()){
+        var auth = pusher.authenticate(socketId, channel);
+        res.formatter.ok(auth);
+    }
+    else 
+        res.formatter.forbidden()
+})
 //============================error handler=======================
 app.use(function (err, req, res, next) {
     console.log('next');

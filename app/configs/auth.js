@@ -1,5 +1,5 @@
 // onst herokuHostUrl = "https://whispering-castle-96662.herokuapp.com";
-// const localhostUrl = "http://localhost:8042";
+const localhostUrl = "http://localhost:8042";
 // const host = herokuHostUrl;
 module.exports = {
     // "facebookAuth": {
@@ -17,5 +17,5 @@ module.exports = {
     "jwt": {
         "secret" : "secretejwtencode"
     },  
-    // "baseUrl": localhostUrl
+    "baseUrl": localhostUrl
 }
