@@ -114,6 +114,129 @@ function getAvailableSportCenters(sportCenters, requestedStart, requestedTime, q
 	return availableSportCenters
 }
 
+
+
+//=================================== Description photos ===========================================
+
+const uploadConfig = require("../configs/upload");
+
+const upload = multer({
+    //TODO: add to config
+    limits: {
+        fileSize: uploadConfig.image.limit.limit_size,
+    }
+}).array("center-photo", uploadConfig.image.limit.max_count);
+
+
+exports.updateDiscriptionPhoto = function (req, res, next) {
+	const centerId = req.params.centerId;
+
+	Center.findById(centerId, (err, center) => {
+		if (err) return next(err);
+
+		if(!center) return next();
+
+		if (!accessControl.hasUpdatePermissionOnCenter(req.user, center)) {
+			return res.formatter.forbidden("You don't have permission on updating center photo");
+		}
+	})
+
+
+	upload(req, res, (err) => {
+		if (err) {
+			console.log(err.detail);
+			return next(err);
+		}
+		// res.send("upload ok");
+
+		var errors = {};
+		var i = 0;
+		req.files.forEach((file) => {
+			//TODO: check if is image file
+			console.log(file.mimetype);
+			if (file.mimetype.split("/")[0] !== "image")
+				return;
+
+			//TODO: put to config
+			//TODO: upload to s3
+			var params = {
+				Bucket: awsConfig.s3.bucketName,
+				Body: file.buffer,
+				// Prefix: carparkId,
+				Key: centerId + "/" + file.originalname
+			}
+
+			s3.putObject(params, (err, data) => {
+				if (err) {
+					errors.push(err)
+				}
+				// console.log(data);
+				i++;
+				if (i === req.files.length) {
+					if (errors.length > 0) return res.formatter.serverError(errors);
+					return res.formatter.ok("All photos uploaded");
+				}
+			})
+
+			// console.log(file.originalname + " is image");
+
+		})
+
+	})
+
+}
+
+exports.getCenterPhotos = function (req, res, next) {
+	const centerId = req.params.centerId;
+
+	s3.listObjects({
+		Bucket: awsConfig.s3.bucketName,
+		Prefix: centerId
+	}, (err, data) => {
+		if (err)
+			return next(err);
+
+		var urls = [];
+		var errors = [];
+
+		var params = {
+			Bucket: awsConfig.s3.bucketName,
+			Key: null,
+			Expires: awsConfig.s3.presignedExpire
+		}
+
+		const photos = data.Contents;
+
+		if (photos.length === 0)
+			return res.formatter.ok({
+				urls: urls,
+				errors: errors
+			});
+
+		var i = 0;
+		photos.forEach((photo) => {
+			params.Key = photo.Key;
+			s3.getSignedUrl('getObject', params, (err, url) => {
+				if (err)
+					return errors.push(err);
+				urls.push(url);
+				i++;
+				if (i === photos.length) {
+					return res.formatter.ok({
+						urls: urls,
+						errors: errors
+					});
+				}
+			});
+		});
+
+		//TODO: get urls
+		//TODO: get sign url
+
+
+		// console.log(data);
+	})
+}
 function getDistanceByOrdinates(lat1, lon1, lat2, lon2) {
     var radlat1 = Math.PI * lat1 / 180
     var radlat2 = Math.PI * lat2 / 180
