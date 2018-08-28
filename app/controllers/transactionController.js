@@ -1,15 +1,12 @@
 const SportCenter = require('../models/sportcenter');
-var User = require("../models/user")
+var User = require("../models/users")
 var Customer = require("../models/customer")
 var Host = require("../models/host")
-
 var Transaction = require("../models/transaction")
-var accessController = require('./resourceAccessControl')
-var qrCodeService = require('../services/qrcodegenerator')
-var qrEncoder = require('qrcode')
-var pusherConfig = require('../../config/pusher')
+var accessController = require('./resourceAccessController')
+var pusherConfig = require('../configs/pusher')
 var Pusher = require('pusher');
-
+var moment = require('moment')
 var pusher = new Pusher({
     appId: pusherConfig.appId,
     key: pusherConfig.key,
@@ -18,20 +15,22 @@ var pusher = new Pusher({
     encrypted: true
 })
 
+const notifService = require("../services/notif");
 
 // For both customer, host, admin
 exports.getAllTransactions = (req, res, next) => {
+    console.log(req.user.usertype)
     const usertype = req.user.usertype;
+
     const query = usertype ? {
         usertype: req.user._id
     } : {};
-
     Transaction.find(query).populate({
             path: 'center',
             select: 'name literalLocation'
         })
         .populate({
-            path: 'customer',
+            path: "customer",
             select: 'fullName phoneNumber'
         })
         .exec((err, transactions) => {
@@ -110,74 +109,42 @@ exports.createTransaction = (req, res, next) => {
                 })
                 return;
             }
-            var transaction = new Transaction(req.body)
-            transaction.fee = center.fee
+            var transaction = new Transaction()
+            transaction.center = req.body.center
+            transaction.paymentMethod = req.body.paymentMethod
+            transaction.fee = center.feePerHour
             transaction.host = center.host
             transaction.customer = req.user._id
+            transaction.start = moment(req.body.start, 'YYYY-MM-DDhh:mm:ss').toDate()
+            transaction.end = moment(req.body.start, 'YYYY-MM-DDhh:mm:ss').add(parseInt(req.body.time), 'h').toDate()
 
-            transaction.save((err, unsavedTransaction) => {
-                if (err)
-                    return next(err)
-                center.decreaseAvailableSlot(1, (err) => {
-                    unsavedTransaction.generateCheckInCode()
-                    unsavedTransaction.save((err, savedTransaction) => {
-                        qrEncoder.toDataURL(savedTransaction.checkinCode, (err, url) => {
-                            if (err)
-                                return next(err)
-                            var channelName = pusherConfig.channelPrefix + savedTransaction.host.toString()
-                            pusher.trigger(channelName, 'customer-request', {
-                                customer: {
-                                    fullName: req.user.fullName,
-                                    phoneNumber: req.user.phoneNumber
-                                }
-                            })
 
-                            res.formatter.created({
-                                transaction: savedTransaction,
-                                qrCode: {
-                                    url: url
-                                }
-                            })
-                        })
-                    })
+            transaction.generateCheckInCode((err, updatedTransaction) => {
+                center.reservations.push({
+                    startAt: updatedTransaction.start,
+                    endAt: updatedTransaction.end,
+                    transaction: updatedTransaction
                 })
-
-            })
-        })
-    }
-}
-// For customer only
-// After host valid the checkin code
-// Checkout code is generated and customer can request for the checkout code
-exports.requestForCheckinCode = (req, res, next) => {
-    Transaction.findOne({
-        _id: req.params.transactionId
-    }, (err, transaction) => {
-        if (err)
-            return next(err)
-        if (transaction) {
-            if (!accessController.hasGetCheckInCodePermissionOnTransaction(req.user, transaction)) {
-                var message = "You dont have permission!";
-                res.formatter.badRequest({
-                    message: message
-                })
-            } else {
-                var checkinCode = transaction.checkinCode
-                qrEncoder.toDataURL(checkinCode, (err, url) => {
+                center.save((err) => {
                     if (err)
-                        return next(err)
-                    res.formatter.ok({
-                        qrCode: {
-                            url: url
+                        return next()
+                    res.formatter.created({
+                        transaction: updatedTransaction,
+                        sportcenter: {
+                            name: center.name,
+                            literalAddress: center.literalAddress
                         }
                     })
+                    var channelName = pusherConfig.channelPrefix + updatedTransaction.host.toString()
+                    pusher.trigger(channelName, "slot-request-event", {
+                        customer: req.user,
+                        transaction: updatedTransaction
+                    })
                 })
-            }
-        } else {
-            res.formatter.noContent()
-        }
+            })
 
-    })
+        })
+    }
 }
 
 // For host only 
@@ -199,13 +166,17 @@ exports.validCheckIn = (req, res, next) => {
                     message: message
                 })
             } else {
-                transaction.checkInAndGenerateCheckoutCode()
-                transaction.save((err, updatedTransaction) => {
+                transaction.checkInAndGenerateCheckoutCode((err, updatedTransaction) => {
                     if (err)
                         return next(err)
-                    var channelName = pusherConfig.channelPrefix + updatedTransaction.customer.toString()
+                    const channelName = pusherConfig.channelPrefix + updatedTransaction.customer.toString();
+
+                    notifService.scheduleTimeExceedWarning(updatedTransaction.customer.toString(), updatedTransaction.customer.end);
+
+
                     pusher.trigger(channelName, "checkin-successfully", {
-                        message: "You have successfully checked in !",
+                        message: "You have successfully checked in!",
+                        transaction: updatedTransaction,
                     })
                     res.formatter.ok(updatedTransaction)
                 })
@@ -215,80 +186,59 @@ exports.validCheckIn = (req, res, next) => {
         }
     })
 }
-
-// For customer only
-// After host valid the checkin code
-// Checkout code is generated and customer can request for the checkout code
-exports.requestForCheckoutCode = (req, res, next) => {
-    Transaction.findOne({
-        _id: req.params.transactionId
-    }, (err, transaction) => {
-        if (err)
-            return next(err)
-        if (transaction) {
-            if (!accessController.hasGetCheckOutCodePermissionOnTransaction(req.user, transaction)) {
-                var message = "You dont have permission!"
-                res.formatter.badRequest({
-                    message: message
-                })
-            } else {
-                var checkoutCode = transaction.checkoutCode
-                qrEncoder.toDataURL(checkoutCode, (err, url) => {
-                    if (err)
-                        return next(err)
-                    res.formatter.ok({
-                        qrCode: {
-                            url: url
-                        }
-                    })
-                })
-            }
-        } else {
-            res.formatter.noContent()
-        }
-
-    })
-}
-
 // For host only 
 // Customer arrived and show the QR code
 // Then, the host will decode the QR code and send checkOut request to server to valid the decoded
 // If valid, the customer may now leave the park
 exports.validCheckOut = (req, res, next) => {
     Transaction.findOne({
-            checkoutCode: req.body.decoded,
-        })
-        .populate({
-            path: 'center',
-            select: 'name literalLocation availableSlot'
-        })
-        .exec((err, transaction) => {
-            if (err)
-                return next(err)
-            if (transaction) {
-                if (!accessController.hasCheckOutPermissionOnTransaction(req.user, transaction)) {
-                    var message = "You dont have permission!"
-                    res.formatter.badRequest({
-                        message: message
-                    })
-                } else {
-                    transaction.checkOut();
-                    transaction.save((err, updatedTransaction) => {
+        checkoutCode: req.body.decoded,
+        status: "UNRESOLVED",
+        arrivalStatus: "ARRIVED"
+    }).populate({
+        path: 'center',
+        select: 'name literalLocation reservations'
+    }).exec((err, transaction) => {
+        if (err)
+            return next(err)
+        if (transaction) {
+            if (!accessController.hasCheckOutPermissionOnTransaction(req.user, transaction)) {
+                var message = "You dont have permission!"
+                res.formatter.badRequest({
+                    message: message
+                })
+            } else {
+                transaction.checkOut((err, updatedTransaction) => {
+                    if (err)
+                        return next(err)
+                    var index = null
+                    var reservations = updatedTransaction.center.reservations
+                    console.log(reservations)
+                    for (var i = 0; i < reservations.length; i++)
+                        if (reservations[i].transaction != undefined)
+                            if (reservations[i].transaction.equals(updatedTransaction._id)) {
+                                index = i;
+                                break
+                            }
+                    if (index != null)
+                        updatedTransaction.center.reservations.splice(index, 1)
+                    updatedTransaction.center.save((err) => {
                         if (err)
                             return next(err)
-                        updatedTransaction.center.increaseAvailableSlot(1, (err) => {
-                            if (err)
-                                return next(err)
-                            var channelName = pusherConfig.channelPrefix + updatedTransaction.customer.toString()
-                            pusher.trigger(channelName, "checkout-successfully", {
-                                message: "You have successfully checked out"
-                            })
-                            res.formatter.ok(updatedTransaction)
-                        });
-                    });
-                }
-            } else {
-                res.formatter.noContent();
+                        const channelName = pusherConfig.channelPrefix + updatedTransaction.customer.toString();
+
+
+                        //start 'cron' timeout warning
+                        notifService.stopTimeExceedWarning(updatedTransaction.customer.toString());
+                        pusher.trigger(channelName, "checkout-successfully", {
+                            message: "You have successfully checked out"
+                        })
+                        res.formatter.ok(updatedTransaction)
+                    })
+                })
             }
-        })
+        } else {
+            res.formatter.noContent();
+        }
+    })
 }

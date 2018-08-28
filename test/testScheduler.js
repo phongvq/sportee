@@ -1,20 +1,8 @@
-const schedule = require('node-schedule');
+const moment = require("moment");
 
-const startTime = new Date(Date.now());
-const endTime = new Date(startTime.getTime() + 100000);
+const notify = require("../app/services/notif");
 
-function startJob(name) {
-    var j = schedule.scheduleJob(name, {
-        start: startTime,
-        end: endTime,
-        rule: '*/1 * * * * *'
-    }, function () {
-        console.log("job");
-    });
-    console.log(schedule.scheduledJobs);
-}
-// j.name = "checkout job";
-
-
-startJob(Date.now().toString());
-startJob(Date.now().toString());
+const d = new Date();
+notify.scheduleTimeExceedWarning("5b8406351d6a974b48884bf2",d);
+console.log(Date.now());
+// notify.scheduleTimeExceedWarning()
