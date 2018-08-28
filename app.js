@@ -28,7 +28,7 @@ app.use(passport.initialize())
 
 require("./app/configs/database")();
 
-const awsConfig =  require("./app/configs/aws");
+const awsConfig = require("./app/configs/aws");
 const creds = new AWS.Credentials({
     accessKeyId: awsConfig.cred.accessKeyId,
     secretAccessKey: awsConfig.cred.secretAccessKey
@@ -42,27 +42,26 @@ require("./app/routes/sportcenter")(app)
 require("./app/routes/transaction")(app)
 
 var pusherConfig = require('./app/configs/pusher')
-app.get("/pusher/auth", (req, res)=>{
+app.get("/pusher/auth", (req, res) => {
     var socketId = req.body.socket_id;
     var channel = req.body.channel_name;
-    if (channel.split(pusherConfig.channelPrefix)[1] === req.user._id.toString()){
+    if (channel.split(pusherConfig.channelPrefix)[1] === req.user._id.toString()) {
         var auth = pusher.authenticate(socketId, channel);
         res.formatter.ok(auth);
-    }
-    else 
+    } else
         res.formatter.forbidden()
 })
 //============================error handler=======================
 app.use(function (err, req, res, next) {
-    console.log(err.message.indexOf("Cast to ObjectId failed"));
-    
-    if (err.message.indexOf("Cast to ObjectId failed") !== -1) {
-        err = {
-            statusCode: 500,
-            detail: "Resource not exist."
-        };
+    // console.log(err.message.indexOf("Cast to ObjectId failed"));
+    if (err.message != undefined) {
+        if (err.message.indexOf("Cast to ObjectId failed") !== -1) {
+            err = {
+                statusCode: 500,
+                detail: "Resource not exist."
+            };
+        }
     }
-
 
 
     console.log('next');

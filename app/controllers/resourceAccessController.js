@@ -12,3 +12,8 @@ exports.hasCheckInPermissionOnTransaction = (user, transaction) => {
 exports.hasCheckOutPermissionOnTransaction = (user, transaction) => {
     return (user.usertype === "host" && transaction.host.equals(user._id) && transaction.arrivalStatus === "ARRIVED")
 };
+
+exports.hasUpdatePermissionOnCenter = (user, center) => {
+    return (user._id.equals(center.host));
+
+};

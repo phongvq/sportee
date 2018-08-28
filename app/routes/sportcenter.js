@@ -1,5 +1,6 @@
 const passport = require('passport');
 const sportcenterController = require('../controllers/sportcenterController');
+const accessControl = require("../controllers/resourceAccessController");
 
 module.exports = function (app) {
     app.get('/sportcenter', passport.authenticate("jwt"), sportcenterController.getAllSportCenters);
@@ -8,12 +9,11 @@ module.exports = function (app) {
     app.post('/sportcenter/new', passport.authenticate("jwt"), sportcenterController.createSportCenter);
     app.post('/sportcenter/:centerId', passport.authenticate("jwt"), sportcenterController.addReservation);
     
-    app.post("/carpark/:centerId/photos/upload",
+    app.post("/sportcenter/:centerId/photos/upload",
         passport.authenticate("jwt"),
-        accessControl.hasUpdatePermissionOnPark,
-        carparkController.updateDiscriptionPhoto);
+        sportcenterController.updateDiscriptionPhoto);
 
-    app.get("/carpark/:centerId/photos",
+    app.get("/sportcenter/:centerId/photos",
         passport.authenticate("jwt"), //all authed user can view park photo
-        carparkController.getParkPhotos);
+        sportcenterController.getCenterPhotos);
 }
