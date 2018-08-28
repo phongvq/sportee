@@ -19,7 +19,7 @@ const userSchema = new Schema({
     active: {
         type: Boolean,
         required: true,
-        default: false
+        default: true
     }
 }, {discriminatorKey: "usertype"});
 
