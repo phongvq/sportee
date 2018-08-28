@@ -23,11 +23,9 @@ exports.getAllSportCentersInArea = (req, res, next) => {
 		var radius = req.query.radius ? req.query.radius : 3
 		var lat = req.query.lat
 		var lng = req.query.lng
-
-		if (lat === undefined && lng === undefined ){
-			res.formatter.ok(sportCenters)
-			return
-		}
+		
+		if (lat == undefined || lng == undefined) 
+			return res.formatter.ok(sportCenters);
 
 		sportCenters.forEach((sportcenter) => {
 			if (getDistanceByOrdinates(sportcenter.mapLocation.lat, sportcenter.mapLocation.lng, lat, lng) < radius * 0.84)
@@ -47,6 +45,7 @@ exports.getSportCentersInAreaValidedUserRequest = (req, res, next) => {
 				return next(err)
 			var requestedStart = req.body.start
 			var requestedTime = req.body.time
+
 			if (moment(requestedStart, 'YYYY-MM-DDhh:mm:ss').toDate() - Date.now() < 15000) {
 				var message = "Invalid query date!"
 				res.formatter.badRequest({

@@ -13,7 +13,7 @@ const AWS = require('aws-sdk');
 
 var app = express();
 
-const port = process.env.port || 8042;
+const port = process.env.PORT || 8042;
 
 app.use(responseFormatter())
 app.use(logger('dev'));
