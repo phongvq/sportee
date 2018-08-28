@@ -12,6 +12,10 @@ exports.getAllSportCentersInArea = (req,res,next)=>{
 		var radius = req.query.radius ? req.query.radius : 3
 		var lat = req.query.lat 
 		var lng = req.query.lng
+		if (lat === undefined && lng === undefined ){
+			res.formatter.ok(sportCenters)
+			return
+		}
 		sportCenters.forEach((sportcenter)=>{
 			if (getDistanceByOrdinates(sportcenter.mapLocation.lat, sportcenter.mapLocation.lng, lat, lng) < radius * 0.84)
 				inAreaSportCenters.push(sportcenter)
