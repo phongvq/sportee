@@ -8,6 +8,8 @@ const bodyparser = require('body-parser');
 
 const mongoose = require('mongoose');
 const passport = require("passport");
+const AWS = require('aws-sdk');
+
 
 var app = express();
 
@@ -25,6 +27,14 @@ app.use(passport.initialize())
 //======================== configs =================
 
 require("./app/configs/database")();
+
+const awsConfig =  require("./app/configs/aws");
+const creds = new AWS.Credentials({
+    accessKeyId: awsConfig.cred.accessKeyId,
+    secretAccessKey: awsConfig.cred.secretAccessKey
+});
+AWS.config.credentials = creds;
+// AWS.config.region = ""
 
 //======================== routes ==================
 require("./app/routes/users")(app);
