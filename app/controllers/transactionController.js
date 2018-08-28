@@ -41,11 +41,11 @@ exports.getAllTransactions = (req, res, next) => {
 
     Transaction.find(query).populate({
             path: 'center',
-            select: 'name literalLocation'
+            select: 'name literalAddress'
         })
         .populate({
             path: req.user.usertype,
-            select: 'fullName phoneNumber'
+            select: 'fullname phonenumber'
         })
         .exec((err, transactions) => {
             if (err)
@@ -78,11 +78,11 @@ exports.getUnresolvedTransactions = (req, res, next) => {
 
     Transaction.find(query).populate({
             path: 'center',
-            select: 'name literalLocation'
+            select: 'name literalAddress'
         })
         .populate({
             path: 'customer',
-            select: 'fullName phoneNumber'
+            select: 'fullname phonenumber'
         })
         .exec((err, transactions) => {
             if (err)
@@ -98,11 +98,11 @@ exports.getTransactionDetail = (req, res, next) => {
         })
         .populate({
             path: 'center',
-            select: 'name literalLocation'
+            select: 'name literalAddress'
         })
         .populate({
             path: 'customer',
-            select: 'fullName phoneNumber'
+            select: 'fullname phonenumber'
         })
         .exec((err, transaction) => {
             if (err)
@@ -221,7 +221,7 @@ exports.validCheckOut = (req, res, next) => {
         arrivalStatus: "ARRIVED"
     }).populate({
         path: 'center',
-        select: 'name literalLocation reservations'
+        select: 'name literalAddress reservations'
     }).exec((err, transaction) => {
         if (err)
             return next(err)
