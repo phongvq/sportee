@@ -137,7 +137,7 @@ exports.createTransaction = (req, res, next) => {
             var transaction = new Transaction()
             transaction.center = req.body.center
             transaction.paymentMethod = req.body.paymentMethod
-            transaction.fee = center.feePerHour
+            transaction.fee = center.feePerHour * parseInt(req.body.time);
             transaction.host = center.host
             transaction.customer = req.user._id
             transaction.start = moment(req.body.start, 'YYYY-MM-DDhh:mm:ss').toDate()
