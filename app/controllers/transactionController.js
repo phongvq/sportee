@@ -20,17 +20,31 @@ const notifService = require("../services/notif");
 // For both customer, host, admin
 exports.getAllTransactions = (req, res, next) => {
     console.log(req.user.usertype)
-    const usertype = req.user.usertype;
+    const usertype = req.user.usertype
 
-    const query = usertype ? {
-        usertype: req.user._id
-    } : {};
+    // const query = usertype ? {
+    //     usertype: req.user._id.toString()
+    // } : {};
+
+    var query;
+
+    if (usertype === 'host')
+        query = {
+            host: req.user._id
+        }
+    else if (usertype === 'customer')
+        query = {
+            customer: req.user._id
+        }
+    else
+        query = {}
+
     Transaction.find(query).populate({
             path: 'center',
             select: 'name literalLocation'
         })
         .populate({
-            path: "customer",
+            path: req.user.usertype,
             select: 'fullName phoneNumber'
         })
         .exec((err, transactions) => {
@@ -44,12 +58,23 @@ exports.getAllTransactions = (req, res, next) => {
 // For both customer, host, admin
 exports.getUnresolvedTransactions = (req, res, next) => {
     const usertype = req.user.usertype;
-    const query = usertype ? {
-        usertype: req.user_id,
-        status: "UNRESOLVED"
-    } : {
-        status: "UNRESOLVED"
-    };
+
+
+    var query;
+
+    if (usertype === 'host')
+        query = {
+            host: req.user._id,
+            status: "UNRESOLVED"
+        }
+    else if (usertype === 'customer')
+        query = {
+            host: req.user._id,
+            status: "UNRESOLVED"
+        }
+    else
+        query = {status: "UNRESOLVED"}
+
 
     Transaction.find(query).populate({
             path: 'center',
