@@ -50,10 +50,10 @@ var transactionSchema = new Schema({
         type: Number
     },
     start: {
-        type : Date 
+        type: Date
     },
-    end : {
-        type : Date
+    end: {
+        type: Date
     },
     arrivedAt: {
         type: Date
@@ -61,11 +61,11 @@ var transactionSchema = new Schema({
     leftAt: {
         type: Date
     },
-    checkinQRUrl : {
-        type : String
+    checkinQRUrl: {
+        type: String
     },
-    checkoutQRUrl : {
-        type : String 
+    checkoutQRUrl: {
+        type: String
     }
 }, {
     timestamps: true,
@@ -77,27 +77,29 @@ transactionSchema.virtual('self_url').get(function () {
 })
 
 transactionSchema.methods.generateCheckInCode = function (callback) {
-    this.save((err)=>{
+    this.save((err) => {
         if (err)
-            return next(err)
+            return console.log(err);
+            
         this.checkinCode = this.self_url + '/' + this.createdAt
-        qrEncoder.toDataURL(this.checkinCode, (err, url)=>{
+        qrEncoder.toDataURL(this.checkinCode, (err, url) => {
             if (err)
-                return next(err)
+                return console.log(err);
+                
             this.checkinQRUrl = url
             this.save(callback)
         })
     })
-    
+
 }
 
 transactionSchema.methods.checkInAndGenerateCheckoutCode = function (callback) {
     this.arrivedAt = Date.now()
     this.arrivalStatus = 'ARRIVED'
     this.checkoutCode = this.self_url + '/' + this.arrivedAt
-    qrEncoder.toDataURL(this.checkoutCode, (err, url)=>{
-        
-        this.checkinCode = null 
+    qrEncoder.toDataURL(this.checkoutCode, (err, url) => {
+
+        this.checkinCode = null
         this.checkinQRUrl = null
         this.checkoutQRUrl = url
         this.save(callback)
