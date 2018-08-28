@@ -7,6 +7,10 @@ var SportCenterSchema = new Schema({
 		required : true,
 		ref : 'Host'
 	},
+	sport :{
+		type : String,
+		required : true
+	},
 	name : {
 		type : String,
 		required : true

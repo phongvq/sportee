@@ -15,6 +15,7 @@ const s3 = new AWS.S3();
 exports.getAllSportCentersInArea = (req, res, next) => {
 	SportCenter.find({
 		status: 'AVAILABLE',
+		sport : req.query.sport
 	}, (err, sportCenters) => {
 		if (err)
 			return next(err)
@@ -39,7 +40,8 @@ exports.getAllSportCentersInArea = (req, res, next) => {
 exports.getSportCentersInAreaValidedUserRequest = (req, res, next) => {
 	if (req.user.usertype === "customer") {
 		SportCenter.find({
-			status: 'AVAILABLE'
+			status: 'AVAILABLE',
+			sport : req.query.sport
 		}, (err, sportCenters) => {
 			if (err)
 				return next(err)
