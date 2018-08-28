@@ -15,15 +15,9 @@ exports.handler = function (err, doc, next) {
                 return next(err);
                 break;
         }
-    } else {
-        return;
+    }
+    if (err) {
+        return next(err);
 
-
-
-
-
-
-
-        next(err);
     }
 }
