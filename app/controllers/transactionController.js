@@ -173,7 +173,6 @@ exports.validCheckIn = (req, res, next) => {
 
                     notifService.scheduleTimeExceedWarning(updatedTransaction.customer.toString(), updatedTransaction.customer.end);
 
-
                     pusher.trigger(channelName, "checkin-successfully", {
                         message: "You have successfully checked in!",
                         transaction: updatedTransaction,
